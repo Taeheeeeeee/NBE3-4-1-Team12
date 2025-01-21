@@ -26,7 +26,9 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -34,13 +36,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class OrderService {
     private final OrderRepository orderRepository;
     private final DetailOrderRepository detailOrderRepository;
     private final PastOrderRepository pastOrderRepository;
 
-	private final CoffeeBeanService coffeeBeanService;
+    private final CoffeeBeanService coffeeBeanService;
     private final SiteUserRepository siteUserRepository;
     private final CoffeeBeanRepository coffeeBeanRepository;
     private final SiteUserRepository userRepository;
@@ -76,9 +79,6 @@ public class OrderService {
      */
     @Transactional
     public void processOrderByScheduling() {
-        System.out.println("========================");
-        System.out.println("Start Scheduled!!\n\n");
-
         LocalDateTime endDate = LocalDateTime.now();
         LocalDateTime startDate = endDate.minusDays(1);
 
@@ -89,21 +89,13 @@ public class OrderService {
         for (MenuOrder order : orders) {
             processOrder(order);
         }
-
-        System.out.println("\n\n========================");
-        System.out.println("End Scheduled!!\n\n");
     }
 
     /**
-     * TODO : PastOrder DB에 DetailOrder 개별로 저장할 것인가, MenuOrder 로 저장할 것인가
-     * 주문 처리 (추후 구현) 처리 방법 정의 후 구현 예정
+     * 주문 처리
      */
     @Transactional
     public void processOrder(MenuOrder order) {
-        /**
-         * TODO : 작업 처리, 처리된 작업 및 처리 도중 오류 로깅
-         */
-        int totalPrice = 0;
 
         List<DetailOrder> orders = order.getOrders();
 
@@ -111,6 +103,10 @@ public class OrderService {
                 .customer(order.getCustomer())
                 .orderStatus(OrderStatus.DELIVERED)
                 .build();
+
+        log.info("처리된 주문");
+        log.info("DetailOrders.id: {}, Customer.id: {}, OrderStatus: DELIVERED", order.getOrders().stream().map(DetailOrder::getId).collect(
+                Collectors.toList()), order.getCustomer().getId());
 
         while (!orders.isEmpty()) {
             DetailOrder detailOrder = orders.getFirst();
@@ -164,7 +160,8 @@ public class OrderService {
         // 고객의 현재 주문 상태 DTO 에 담아 반환
         List<BeanNameQuantityDTO> beanNameQuantityDTOList = new ArrayList<>();
         for (DetailOrder beanOrders : menuOrder.getOrders()) {
-            BeanNameQuantityDTO beanNameQuantityDto = new BeanNameQuantityDTO(beanOrders.getName(), beanOrders.getQuantity());
+            BeanNameQuantityDTO beanNameQuantityDto = new BeanNameQuantityDTO(beanOrders.getName(),
+                    beanOrders.getQuantity());
             beanNameQuantityDTOList.add(beanNameQuantityDto);
         }
         PutMenuOrderRqDTO orderReqDTO = new PutMenuOrderRqDTO(); // 응답 형식에 따름
@@ -173,17 +170,15 @@ public class OrderService {
     }
 
 
-
     @Transactional
-	public void deleteOrder(MenuOrder menuOrder) {
+    public void deleteOrder(MenuOrder menuOrder) {
         // 커피콩 재고 수량 초기화 (주문 취소)
-        for(DetailOrder detailOrder : menuOrder.getOrders()) {
+        for (DetailOrder detailOrder : menuOrder.getOrders()) {
             CoffeeBean coffeeBean = coffeeBeanService.findByName(detailOrder.getName());
             coffeeBeanService.changeStockWithValidation(coffeeBean, -detailOrder.getQuantity());
         }
-		orderRepository.delete(menuOrder);
-	}
-
+        orderRepository.delete(menuOrder);
+    }
 
 
     @Transactional
@@ -222,7 +217,6 @@ public class OrderService {
             // 재고 확인 및 차감
             coffeeBeanService.changeStockWithValidation(coffeeBean, product.quantity());
             coffeeBeanRepository.save(coffeeBean); // 변경된 재고 저장
-
 
             // DetailOrder 생성 및 추가
             DetailOrder detailOrder = DetailOrder

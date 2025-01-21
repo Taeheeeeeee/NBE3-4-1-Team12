@@ -228,7 +228,7 @@ class OrderControllerTest {
 				.andExpect(jsonPath("$.data.products[0].quantity").value(2))
 				.andExpect(jsonPath("$.data.products[1].id").value(2))
 				.andExpect(jsonPath("$.data.products[1].quantity").value(3))
-				.andExpect(jsonPath("$.data.totalPrice").value(5000))
+				.andExpect(jsonPath("$.data.totalPrice").value(26500))
 				.andExpect(jsonPath("$.data.status").value("READY_FOR_DELIVERY"));
 	}
 
@@ -248,7 +248,7 @@ class OrderControllerTest {
 										     "products": [
 										         {
 										             "id": 1,
-										             "quantity": 50
+										             "quantity": 500
 										         }
 										     ]
 										 }
@@ -263,7 +263,7 @@ class OrderControllerTest {
 				.andExpect(handler().methodName("createOrder"))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.resultCode").value("400-1"))
-				.andExpect(jsonPath("$.msg").value("재고가 부족합니다. 남은 재고: 49"));
+				.andExpect(jsonPath("$.msg").value("재고가 부족합니다. 남은 재고: 50"));
 	}
 
 	@Test

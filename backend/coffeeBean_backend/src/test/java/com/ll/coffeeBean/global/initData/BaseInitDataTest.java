@@ -42,7 +42,7 @@ class BaseInitDataTest {
 
         assertEquals(user.getEmail(), "user1@naver.com");
         assertEquals(user.getOrders().size(), 1);
-        assertEquals(user.getOrders().get(0).getOrders().size(), 3);
+        assertEquals(user.getOrders().get(0).getOrders().size(), 4);
         assertEquals(user.getOrders().get(0).getCustomer().getEmail(), order.getCustomer().getEmail());
         assertEquals(user.getOrders().get(0).getOrders().get(0).getName(), detailOrder.getName());
         assertNull(user.getOrders().get(0).getOrders().get(0).getPastOrder());
